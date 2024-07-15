@@ -167,9 +167,11 @@ func setup(c *caddy.Controller) error {
 		zone := origins[0]
 		log.Infof("Added plugin %s. Zone=%s", PluginName, zone)
 		p := NewGslb(next, core, zone, nsA)
-		if err := p.Run(context.Background()); err != nil {
-			clog.Fatalf("Failed to run %s: %v", PluginName, err)
-		}
+		go func() {
+			if err := p.Run(context.Background()); err != nil {
+				clog.Fatalf("Failed to run %s: %v", PluginName, err)
+			}
+		}()
 		return p
 	})
 
