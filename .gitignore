@@ -1,0 +1,3 @@
+supervisord.pid
+**/.terraform/*
+secrets/
