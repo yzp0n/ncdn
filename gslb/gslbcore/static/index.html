@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang=ja>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NCDN GSLB visualizer</title>
+<style>
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background-color: #f8f8f0;
+}
+
+.ui {
+    position: absolute;
+    border: 1px solid #ccc;
+    padding: 10px;
+    bottom: 10px;
+    left: 10px;
+    background-color: #fcfcfc;
+}
+
+.ui h2, .ui h3 {
+    margin: 0;
+}
+
+.ui h3 {
+    margin-top: 5px;
+}
+
+.result {
+    margin: 0.5em 0;
+    color: #333;
+    font-family: monospace;
+}
+
+.pop_id {
+    padding: 0 0.5em;
+    color: #666;
+    font-weight: bold;
+}
+
+#worldmap {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+}
+
+h1 {
+    margin: 10px;
+}
+
+.popup {
+    position: absolute;
+    padding: 10px;
+    border-radius: 3px;
+    max-width: 200px;
+}
+
+.popup h2 {
+    margin: 0;
+    font-size: 1em;
+}
+
+.popup .extra {
+    float: left;
+    font-weight: bold;
+    color: #777;
+    font-family: monospace;
+}
+
+.pop {
+    background-color: #ccf;
+    border: 1px solid #ccc;
+}
+
+.region {
+    background-color: #cfc;
+    border: 1px solid #ccc;
+}
+
+.highlight {
+    box-shadow: 0px 0px 15px 7px rgba(255,46,130,0.87);
+}
+
+.error {
+    color: red;
+}
+
+footer {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    font-size: 10px;
+}
+</style>
+<body>
+<img id="worldmap" src="world.svg" alt="World Map">
+
+<h1>NCDN GSLB visualizer</h1>
+
+<form id="try_query">
+<div class="ui">
+<h2>Simulate query</h2>
+<input type="text" id="srcip">
+<input type="submit"><br>
+<h3>result:</h3>
+<div class="result">
+[[Results shown here]]
+</div>
+</form>
+</div>
+
+<div id="pops"></div>
+<div id="regions"></div>
+
+<footer>
+world.svg from <a href="https://simplemaps.com/resources/svg-world">simplemaps.com</a> <a href="https://simplemaps.com/resources/svg-license">license</a>
+</footer>
+<script>
+const $ = document.querySelector.bind(document);
+const $$ = document.querySelectorAll.bind(document);
+
+function genToken() {
+    // use current time as token
+    return Date.now();
+}
+
+const popIdToPopup = new Map();
+const regionIdToPopup = new Map();
+window.proceedToken = 'notoken';
+window.addEventListener('DOMContentLoaded', async () => {
+    fetch('/pops.json').then((res) => res.json()).then((pops) => {
+        const popsC = $('#pops');
+        pops.forEach((p) => {
+            const div = document.createElement('div');
+            div.id = `pop-${p.id}`;
+            div.classList.add('pop');
+            div.classList.add('popup');
+            div.style.cssText = p.ui_popup_css;
+            div.setAttribute('x-id', p.id);
+
+            const h2 = document.createElement('h2');
+            h2.innerText = "📡"+p.id;
+            div.appendChild(h2);
+
+            const extra = document.createElement('div');
+            extra.classList.add('extra');
+            div.appendChild(extra);
+
+            popsC.appendChild(div);
+            popIdToPopup.set(p.id, div);
+
+            div.addEventListener('mouseenter',
+               () => { visualizeLatencyToPop(p.id); });
+            div.addEventListener('mouseleave', clearAllExtra);
+        });
+    });
+
+    fetch('/regions.json').then((res) => res.json()).then((regions) => {
+        const regionsC = $('#regions');
+        regions.forEach((r) => {
+            const div = document.createElement('div');
+            div.id = `region-${r.id}`;
+            div.classList.add('region');
+            div.classList.add('popup');
+            div.style.cssText = r.ui_popup_css;
+            div.setAttribute('x-id', r.id);
+
+            const h2 = document.createElement('h2');
+            h2.innerText = "📍"+r.id;
+            div.appendChild(h2);
+
+            const extra = document.createElement('div');
+            extra.classList.add('extra');
+            div.appendChild(extra);
+
+            regionsC.appendChild(div);
+            regionIdToPopup.set(r.id, div);
+
+            div.addEventListener('click', (e) => {
+                $('#srcip').value = r.prefices[0].replace('.0/24', '.123');
+            });
+
+            div.addEventListener('mouseenter',
+               () => { visualizeLatencyToRegion(r.id); });
+            div.addEventListener('mouseleave', clearAllExtra);
+        });
+    });
+});
+
+$('#try_query').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const srcip = $('#srcip').value;
+    const resultEl = $('#try_query .result');
+    resultEl.innerHTML = '';
+
+    try {
+        resultEl.classList.remove('error');
+        const resp = await fetch(`/query?srcip=${srcip}`);
+        if (!resp.ok) {
+            throw new Error(await resp.text());
+        }
+        const data = await resp.json();
+
+        const ul = document.createElement('ul');
+        data.forEach((item) => {
+            const li = document.createElement('li');
+
+            const ipS = document.createElement('span');
+            ipS.classList.add('ip');
+            ipS.innerText = item.ip;
+            li.appendChild(ipS);
+
+            const popIdS = document.createElement('span');
+            popIdS.classList.add('pop_id');
+            popIdS.innerText = item.pop_id;
+            li.appendChild(popIdS);
+
+            li.addEventListener('mouseenter', () => {
+                popIdToPopup.get(item.pop_id).classList.add('highlight');
+            });
+            li.addEventListener('mouseleave', () => {
+                popIdToPopup.get(item.pop_id).classList.remove('highlight');
+            });
+
+            ul.appendChild(li);
+        });
+        resultEl.appendChild(ul);
+    } catch(e) {
+        resultEl.classList.add('error');
+        resultEl.innerText = e.message;
+    }
+});
+
+async function visualizeLatencyToPop(popId) {
+    const token = genToken();
+    window.proceedToken = token;
+
+    const resp = await fetch(`/latency_to_pop?pop_id=${popId}`);
+    if (!resp.ok) {
+        throw new Error(await resp.text());
+    }
+    const latency_map = await resp.json();
+
+    if (window.proceedToken !== token) {
+        console.log(`visualizeLatencyToPop(${popId}): Not proceeding, since proceedToken has changed.`)
+        return;
+    }
+
+    for (const [regionId, latency] of Object.entries(latency_map)) {
+        const region = regionIdToPopup.get(regionId);
+        region.querySelector('.extra').innerText = `${latency.toFixed(2)}ms`;
+    }
+}
+
+async function visualizeLatencyToRegion(regionId) {
+    const token = genToken();
+    window.proceedToken = token;
+
+    const resp = await fetch(`/latency_to_region?region_id=${regionId}`);
+    if (!resp.ok) {
+        throw new Error(await resp.text());
+    }
+    const latency_map = await resp.json();
+
+    if (window.proceedToken !== token) {
+        console.log(`visualizeLatencyToRegion(${regionId}): Not proceeding, since proceedToken has changed.`)
+        return;
+    }
+
+    for (const [popId, latency] of Object.entries(latency_map)) {
+        const pop = popIdToPopup.get(popId);
+        pop.querySelector('.extra').innerText = `${latency.toFixed(2)}ms`;
+    }
+}
+
+function clearAllExtra() {
+    window.proceedToken = 'invalidated';
+    // return;
+    for (const pop of popIdToPopup.values()) {
+        pop.querySelector('.extra').innerText = '';
+    }
+    for (const region of regionIdToPopup.values()) {
+        region.querySelector('.extra').innerText = '';
+    }
+}
+
+</script>

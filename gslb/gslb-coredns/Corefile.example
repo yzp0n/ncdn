@@ -1,0 +1,44 @@
+ncdn.example.:10053 {
+    ready
+    health
+    prometheus :9153
+    ncdn_gslb {
+        http_server localhost:8853
+        ns_a_addr 163.220.238.254
+
+        pop "shinjuku" {
+            ip4 192.0.2.10
+            latency_endpoint_url http://192.0.2.10:8889/latencyz
+        }
+        pop "hatsudai" {
+            ip4 192.0.2.20
+            latency_endpoint_url http://192.0.2.20:8889/latencyz
+        }
+        pop "ishikari" {
+            ip4 192.0.2.30
+            latency_endpoint_url http://192.0.2.30:8889/latencyz
+        }
+
+        region "APAC" {
+            prefices 198.51.100.0/28
+            prefices 198.51.100.192/28
+
+            prober_url https://apac.prober.example:8443/probe
+        }
+        region "EU" {
+            prefices 198.51.100.64/28
+
+            prober_url https://eu.prober.example:8443/probe
+        }
+        region "AFR" {
+            prefices 198.51.100.128/28
+
+            prober_url https://afr.prober.example:8443/probe
+        }
+    }
+    pprof :6053 {
+        block
+    }
+    log
+    debug
+}
