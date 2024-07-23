@@ -1,12 +1,17 @@
 {
 	"name": "ncdn",
 	"image": "mcr.microsoft.com/devcontainers/go:1-1-bookworm",
-	"features": {
-		/* "ghcr.io/devcontainers/features/docker-in-docker:2": {} */
-	},
+	"features": {},
 	"postCreateCommand": ".devcontainer/postCreate.sh",
 	"runArgs": ["--init", "--privileged"],
-	"mounts": [
-		"source=${env:HOME}${env:USERPROFILE}/.ssh,target=/home/vscode/.ssh,type=bind,readonly",
-	],
+	"mounts": [],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-vscode.cpptools",
+				"llvm-vs-code-extensions.vscode-clangd",
+				"golang.go",
+			]
+		}
+	}
 }
