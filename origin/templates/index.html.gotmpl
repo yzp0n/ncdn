@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セキュリティ・キャンプ2024 ネクスト CDN自作 講義</title>
+    <link href="/tailwind.v2.2.19.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-image: url('/moon.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        .bg-opacity-70 {
+            background: rgba(0, 0, 0, 0.7);
+        }
+    </style>
+</head>
+<body class="text-white">
+    <div class="min-h-screen flex flex-col justify-center items-center bg-opacity-70">
+        <header class="text-center">
+            <h1 class="text-4xl font-bold mb-4">セキュリティ・キャンプ2024 ネクスト</h1>
+            <h2 class="text-2xl mb-8">CDN自作 講義</h2>
+        </header>
+
+        <main class="w-full max-w-4xl p-6 bg-gray-800 bg-opacity-90 rounded-lg">
+            <section class="mb-6">
+                <h3 class="text-xl font-semibold mb-2">通信経路情報</h3>
+                <div id="connection-info" class="bg-gray-700 p-4 rounded-lg">
+                    <p>クライアントIPアドレス: <span id="client-ip">{{ .RemoteAddr }}</span></p>
+                    <p>AS番号: <span id="as-number"></span></p>
+                    <p>ISP: <span id="isp"></span></p>
+                    <p>GeoIP情報: <span id="geoip"></span></p>
+                    <p>Navigation処理時間(ブラウザ内部処理): <span id="nav-dur"></span></p>
+                    <p>名前解決処理時間: <span id="resolv-dur"></span></p>
+                    <p>セッション確立時間: <span id="conn-dur"></span></p>
+                    <p>リクエスト送信→ヘッダ受信時間: <span id="req-dur"></span></p>
+                    <p>レスポンス本文受信時間: <span id="res-dur"></span></p>
+                    <p>PoPCache ノードID: <span id="popcache-id">{{ .PopCacheId }}</span></p>
+                    <p>Origin ノードID: <span id="origin-id">{{ .OriginId }}</span></p>
+                    <p>その他メタデータ: <span id="meta-data"></span></p>
+                </div>
+            </section>
+
+            <section class="mb-6">
+                <h3 class="text-xl font-semibold mb-2">クレジット</h3>
+                <div class="bg-gray-700 p-4 rounded-lg">
+                    <p>その他のクレジット情報をここに記載</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const wpt = window.performance.timing;
+
+            document.getElementById('nav-dur').textContent = wpt.fetchStart - wpt.navigationStart + 'ms';
+            document.getElementById('resolv-dur').textContent = wpt.domainLookupEnd - wpt.domainLookupStart + 'ms';
+            document.getElementById('conn-dur').textContent = wpt.connectEnd - wpt.connectStart + 'ms';
+            document.getElementById('req-dur').textContent = wpt.responseStart - wpt.requestStart + 'ms';
+            document.getElementById('res-dur').textContent = wpt.responseEnd - wpt.responseStart + 'ms';
+
+            // ここにIP情報やリソースタイミング情報を取得して表示するスクリプトを追加します
+            /*
+            document.getElementById('as-number').textContent = 'AS12345'; // サンプルデータ
+            document.getElementById('isp').textContent = 'ISP Name'; // サンプルデータ
+            document.getElementById('geoip').textContent = 'Tokyo, Japan'; // サンプルデータ
+            document.getElementById('resource-timings').textContent = 'Resource Timing Info'; // サンプルデータ
+            document.getElementById('meta-data').textContent = 'Metadata info'; // サンプルデータ
+            */
+        });
+    </script>
+</body>
+</html>
