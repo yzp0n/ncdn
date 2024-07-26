@@ -174,9 +174,14 @@ func (p *Gslb) A(ctx context.Context, qname, subdomain string, srcIP net.IP) ([]
 
 	// FIXME: we only act on "www.[domain]" for now.
 	if "www" == subdomain {
-		srcIP, ok := netip.AddrFromSlice(srcIP)
+		srcIPv4 := srcIP.To4()
+		if srcIPv4 == nil {
+			return nil, fmt.Errorf("(net.IP).To4(%v) failed.", srcIP)
+		}
+
+		srcIP, ok := netip.AddrFromSlice(srcIPv4)
 		if !ok {
-			return nil, fmt.Errorf("netip.AddrFromSlice(%v) failed.", srcIP)
+			return nil, fmt.Errorf("netip.AddrFromSlice(%v) failed.", srcIPv4)
 		}
 		ips := p.core.Query(srcIP)
 
