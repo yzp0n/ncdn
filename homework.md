@@ -69,5 +69,46 @@ VSCodeでターミナルを開くと、devcontainer内環境のbashが立ち上�
     * `c.regions`には、その地域のIPアドレス範囲と、プローブから計測したPoPへのRTT情報が収められています。これを活用して、地域から一番RTTが短いPoPのIPアドレスを返すように、Query関数を書いてみてください。
 * より良いアルゴリズムを提案してください。また、可能であればそれを実装してみてください。
 
-## 事前課題3以降
-作成中になります
+## 事前課題3: L4LB 環境構築
+
+#### devcontainer 環境構築
+事前課題2配布以降、devcontainer 環境ファイルを更新しています。
+`git pull`後、VSCode 上で`DevContainer: Rebuild Container`を実行し、BPF開発環境を含む、最新版の devcontainer 環境に更新してください。
+
+#### netns 模擬環境構築
+`cd l4lb; sudo ./netns_setup.sh`を実行すると、下図のようなネットワークが`netns`コンテナを用いて構築されます。
+
+![netns_setup](l4lb/netns_setup.png)
+
+* `netns_setup.sh`の中身を読んで、どうやってこのようなネットワークを構築しているか調べてみてください。
+* `netns`内の Linux ネットワーク設定を変更するには `ip -n [netns名] route show`のように、iproute2 のipコマンド[[man ip(8)](https://man7.org/linux/man-pages/man8/ip.8.html)]に用意されている`-n`コマンドライン引数が使えます。図のようなネットワークが構築できているかどうか、確認してみましょう。
+    * `ip -n [netns名] a`を実行して、割り当てられている IP アドレスを確認してみてください
+    * `ip -n [netns名] r get [別netnsのIPアドレス]`を実行して、nexthop を確認してみてください
+* Linux プロセスを指定`netns`内で立ち上げるには`ip netns exec`が便利です。`sudo ip netns exec [netns名] [コマンド...]`という形で使えます。
+    * `sudo ip netns exec [netns名] ping [別netnsのIPアドレス]`を実行して、ICMP pingが到達可能なことを確かめてみてください
+
+#### 模擬キャッシュサーバ、オリジンサーバの起動
+別ターミナルを開き、`cd l4lb; ./run-be.sh`を実行すると、模擬キャッシュサーバ、オリジンサーバがそれぞれ`C0, C1, O` netns内で立ち上がります。
+
+http://localhost:9002 をブラウザで開くと、これらのプロセスが管理される supervisord の WebUI にアクセスできます。
+
+#### L4LBの起動
+さらに別ターミナルを開き（キャッシュサーバ、オリジンサーバを立ち上げたままで）`cd l4lb; ./run-lb.sh`を実行すると、L4LBが起動します。
+
+#### 動作確認
+* `C0`→`O` 疎通確認
+    * `sudo ip netns exec C0 curl http://192.168.88.30:8888/json`
+* `C0` キャッシュサーバが動いていることを確認
+    * `sudo ip netns exec C0 curl http://192.0.2.10:8889/statusz`
+* `U` ユーザからキャッシュサーバにL4LBを介して到達できることを確認
+    * `sudo ip netns exec U curl http://192.0.2.10:8889/statusz`
+
+#### パケットキャプチャを見る
+どんなパケットが流れているかを見てみましょう。
+
+* `U⇔R`間トラフィックをキャプチャ
+    * `sudo ip netns exec R tcpdump -vvv -ni netU`
+* `brDev`ブリッジ（仮想L2スイッチ）トラフィックをキャプチャ
+    * `sudo tcpdump -vvv -ni brDev`
+
+`tcpdump -w [pcapファイル名]`とすると、パケットキャプチャをpcapファイルとして書き出すことができます。このファイルをwiresharkで開くと、より詳細な情報が見やすいかもしれません。
