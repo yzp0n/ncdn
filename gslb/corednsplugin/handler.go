@@ -178,6 +178,8 @@ func (p *Gslb) A(ctx context.Context, qname, subdomain string, srcIP net.IP) ([]
 		if !ok {
 			return nil, fmt.Errorf("netip.AddrFromSlice(%v) failed.", srcIP)
 		}
+		srcIP = srcIP.Unmap()
+
 		ips := p.core.Query(srcIP)
 
 		for _, ip := range ips {
