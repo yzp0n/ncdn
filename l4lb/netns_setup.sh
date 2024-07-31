@@ -55,6 +55,8 @@ function add_ns() {
 set -x
 ip l add name brDev type bridge
 ip l set dev brDev up
+# disable iptables in linux bridge
+sysctl -w net.bridge.bridge-nf-call-iptables=0
 
 add_ns_bare U # "198.51.100.200/24"
 add_ns R "192.168.88.1/24"
