@@ -13,5 +13,6 @@
 				"golang.go",
 			]
 		}
-	}
+	},
+	"forwardPorts": [9002]
 }
