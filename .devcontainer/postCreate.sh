@@ -7,4 +7,4 @@ sudo apt install --no-install-recommends -y \
     build-essential libbpf-dev clang llvm
 sudo apt install linux-headers-$(uname -r)
 
-go install github.com/cespare/reflex@latest
+go get -v ./...
