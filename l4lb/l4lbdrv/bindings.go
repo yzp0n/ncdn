@@ -77,8 +77,8 @@ func BindBalancer(binPath, xdpcapHookPath string) (*Bindings, error) {
 	var bindings Bindings
 	if err := spec.LoadAndAssign(&bindings, &ebpf.CollectionOptions{
 		Programs: ebpf.ProgramOptions{
-			LogLevel: 0,
-			LogSize:  1 * 1024 * 1024,
+			LogLevel:     0,
+			LogSizeStart: 1 * 1024 * 1024,
 		},
 	}); err != nil {
 		var ve *ebpf.VerifierError
