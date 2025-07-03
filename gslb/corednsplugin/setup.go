@@ -73,6 +73,23 @@ func setup(c *caddy.Controller) error {
 							pop.Ip4 = ip4
 						}
 
+					case "ip4_lookup":
+						for c.NextArg() {
+							s := c.Val()
+
+							addr, err := net.ResolveIPAddr("ip4", s)
+							if err != nil {
+								return c.Errf("Failed to resolve pop_ip4_lookup=%q: %v", s, err)
+							}
+							ip4, ok := netip.AddrFromSlice(addr.IP)
+							if !ok {
+								return c.Errf("Failed to convert %v to netip.Addr", addr.IP)
+							}
+							fmt.Printf("Resolved pop_ip4_lookup=%q to %s\n", s, ip4)
+
+							pop.Ip4 = ip4
+						}
+
 					case "latency_endpoint_url":
 						if !c.NextArg() {
 							return c.ArgErr()
