@@ -1,140 +1,458 @@
 <!DOCTYPE html>
-<html lang=ja>
+<html lang=en>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>NCDN GSLB visualizer</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+*, *::before, *::after { box-sizing: border-box; }
+
+@keyframes ncdn-spin    { to { transform: rotate(360deg); } }
+@keyframes ncdn-pop-in  { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
 html, body {
     margin: 0;
     padding: 0;
     height: 100%;
     width: 100%;
     overflow: hidden;
-    background-color: #f8f8f0;
-}
-
-.ui {
-    position: absolute;
-    border: 1px solid #ccc;
-    padding: 10px;
-    bottom: 10px;
-    left: 10px;
-    background-color: #fcfcfc;
-}
-
-.ui h2, .ui h3 {
-    margin: 0;
-}
-
-.ui h3 {
-    margin-top: 5px;
-}
-
-.result {
-    margin: 0.5em 0;
-    color: #333;
-    font-family: monospace;
-}
-
-.pop_id {
-    padding: 0 0.5em;
-    color: #666;
-    font-weight: bold;
+    background: #e9eef3;
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    color: #1e293b;
 }
 
 #worldmap {
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
     object-fit: fill;
 }
 
-h1 {
-    margin: 10px;
+/* ===== TITLE (top-left) ===== */
+.title-block {
+    position: absolute;
+    top: 20px; left: 20px;
+    z-index: 100;
+}
+.title-eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .16em;
+    color: #2f6bdb;
+    font-family: 'IBM Plex Mono', monospace;
+}
+.title-main {
+    font-size: 21px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+    margin-top: 1px;
+}
+.title-sub {
+    font-size: 12.5px;
+    color: #64748b;
+    margin-top: 3px;
+    max-width: 260px;
+    line-height: 1.45;
 }
 
+/* ===== LEGEND (top-right) ===== */
+.legend {
+    position: absolute;
+    top: 20px; right: 20px;
+    z-index: 100;
+    width: 226px;
+    background: rgba(255,255,255,.92);
+    backdrop-filter: blur(6px);
+    border: 1px solid #e4e9f0;
+    border-radius: 11px;
+    box-shadow: 0 6px 22px rgba(15,30,60,.10);
+    padding: 13px 14px;
+}
+.legend-heading {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: #94a3b8;
+    margin-bottom: 10px;
+}
+.legend-heading + .legend-heading { margin-top: 3px; }
+.legend-row {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 8px;
+    font-size: 12px;
+}
+.legend-pop-swatch {
+    width: 14px; height: 14px; flex: none;
+    border-radius: 4px;
+    background: #243042;
+    border: 1.5px solid #fff;
+    box-shadow: 0 1px 2px rgba(0,0,0,.3);
+}
+.legend-probe-swatch {
+    width: 14px; height: 14px; flex: none;
+    border-radius: 50%;
+    background: #fff;
+    border: 3px solid #0e7490;
+}
+.legend-lat-row {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 11px;
+}
+.legend-lat-item {
+    flex: 1;
+    text-align: center;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10.5px;
+    font-weight: 600;
+    border-radius: 5px;
+    padding: 3px 0;
+}
+.legend-tip {
+    font-size: 11.5px;
+    color: #64748b;
+    line-height: 1.5;
+    border-top: 1px solid #eef2f6;
+    padding-top: 9px;
+}
+
+/* ===== QUERY PANEL (bottom-left) ===== */
+.ui {
+    position: absolute;
+    bottom: 20px; left: 20px;
+    z-index: 100;
+    width: 344px;
+    background: #fff;
+    border: 1px solid #e4e9f0;
+    border-radius: 13px;
+    box-shadow: 0 10px 34px rgba(15,30,60,.16);
+    padding: 16px 17px;
+}
+.ui-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 11px;
+}
+.ui-title {
+    font-size: 13.5px;
+    font-weight: 600;
+}
+.ui-input-row {
+    display: flex;
+    gap: 8px;
+}
+.sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+}
+#srcip {
+    flex: 1;
+    min-width: 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    color: #1e293b;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    padding: 9px 11px;
+    outline: none;
+    background: #fff;
+    transition: border-color .12s, box-shadow .12s;
+}
+#srcip:focus {
+    border-color: #2f6bdb;
+    box-shadow: 0 0 0 3px rgba(47,107,219,.16);
+}
+#srcip:disabled { opacity: .6; }
+
+.ui-submit {
+    flex: none;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: #2f6bdb;
+    border: none;
+    border-radius: 8px;
+    padding: 0 15px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: background .12s;
+}
+.ui-submit:hover:not(:disabled) { background: #255bc0; }
+.ui-submit:disabled { opacity: .7; cursor: not-allowed; }
+
+.btn-spinner {
+    display: none;
+    width: 12px; height: 12px;
+    border: 2px solid rgba(255,255,255,.5);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: ncdn-spin .7s linear infinite;
+}
+.ui-submit.is-loading .btn-spinner { display: inline-block; }
+
+.ui-idle-tip {
+    font-size: 11.5px;
+    color: #94a3b8;
+    margin-top: 10px;
+    line-height: 1.5;
+}
+
+.result {
+    margin-top: 11px;
+    animation: ncdn-pop-in .2s ease;
+}
+.result ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+.result li {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 9px 11px;
+    margin-top: 7px;
+    border-radius: 9px;
+    border: 1px solid #eef2f6;
+    background: #fff;
+    cursor: default;
+    transition: background .12s, border-color .12s;
+}
+.result li:hover {
+    background: #f5f8ff;
+    border-color: #bcd0f5;
+}
+.result li .ip {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+}
+.pop_id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    background: #e8f0fe;
+    color: #2f6bdb;
+    border-radius: 5px;
+    padding: 3px 6px;
+}
+.result.error {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 9px;
+    padding: 10px 12px;
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    font-size: 12px;
+    color: #b91c1c;
+    line-height: 1.5;
+}
+.result.error::before {
+    content: '!';
+    flex: none;
+    width: 17px; height: 17px;
+    border-radius: 50%;
+    background: #dc2626;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+}
+.result.loading {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #64748b;
+    font-size: 12.5px;
+}
+
+/* ===== MAP NODES ===== */
 .popup {
     position: absolute;
-    padding: 10px;
-    border-radius: 3px;
-    max-width: 200px;
+    width: 15px; height: 15px;
+    transform: translate(-50%, -50%);
+    transition: transform .12s ease, box-shadow .12s ease, background .12s ease, border-color .12s ease;
+    z-index: 12;
 }
 
 .popup h2 {
-    margin: 0;
-    font-size: 1em;
+    position: absolute;
+    top: 100%; left: 50%;
+    transform: translateX(-50%);
+    margin-top: 6px;
+    font: 600 9.5px/1 'IBM Plex Mono', monospace;
+    letter-spacing: .06em;
+    white-space: nowrap;
+    pointer-events: none;
+    padding: 1px 3px;
+    border-radius: 3px;
+    background: rgba(255,255,255,.74);
+    color: #1e293b;
 }
 
 .popup .extra {
-    float: left;
-    font-weight: bold;
-    color: #777;
-    font-family: monospace;
+    position: absolute;
+    bottom: 100%; left: 50%;
+    transform: translateX(-50%);
+    margin-bottom: 6px;
+    font: 600 10px/1 'IBM Plex Mono', monospace;
+    background: #fff;
+    padding: 2px 5px;
+    border-radius: 999px;
+    box-shadow: 0 1px 4px rgba(0,0,0,.16);
+    white-space: nowrap;
+    pointer-events: none;
 }
+.popup .extra:empty { display: none; }
 
 .pop {
-    background-color: #ccf;
-    border: 1px solid #ccc;
+    background: #243042;
+    border: 1.5px solid #fff;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.pop.active {
+    background: #2f6bdb;
+    transform: translate(-50%, -50%) scale(1.32);
+    box-shadow: 0 0 0 5px rgba(47,107,219,.22), 0 2px 6px rgba(0,0,0,.32);
+    z-index: 45;
 }
 
 .region {
-    background-color: #cfc;
-    border: 1px solid #ccc;
+    background: #fff;
+    border: 3px solid #0e7490;
+    border-radius: 50%;
+    box-shadow: 0 1px 3px rgba(0,0,0,.28);
+    cursor: pointer;
+}
+.region h2 { color: #0e7490; }
+.region.active {
+    border-color: #2f6bdb;
+    transform: translate(-50%, -50%) scale(1.32);
+    box-shadow: 0 0 0 5px rgba(47,107,219,.20), 0 2px 6px rgba(0,0,0,.28);
+    z-index: 45;
 }
 
 .highlight {
-    box-shadow: 0px 0px 15px 7px rgba(255,46,130,0.87);
+    transform: translate(-50%, -50%) scale(1.5) !important;
+    box-shadow: 0 0 0 5px rgba(47,107,219,.22), 0 2px 6px rgba(0,0,0,.32) !important;
+    background: #2f6bdb !important;
+    z-index: 50;
 }
 
-.error {
-    color: red;
-}
+/* latency pill colours */
+.lat-good { color: #15803d; border: 1px solid #bbf7d0; }
+.lat-warn  { color: #b45309; border: 1px solid #fde68a; }
+.lat-bad   { color: #b91c1c; border: 1px solid #fecaca; }
 
+/* ===== FOOTER (bottom-right) ===== */
 footer {
     position: absolute;
-    bottom: 10px;
-    right: 10px;
-    font-size: 10px;
+    bottom: 20px; right: 20px;
+    z-index: 100;
+    text-align: right;
+    font-family: 'IBM Plex Mono', monospace;
+    color: #9aa7b5;
+    font-size: 10.5px;
+    line-height: 1.55;
 }
+footer a { color: #9aa7b5; }
+footer .footer-brand { font-weight: 600; color: #7c8a99; }
 </style>
+</head>
 <body>
 <img id="worldmap" src="world.svg" alt="World Map">
 
-<h1>NCDN GSLB visualizer</h1>
-
-<div class="ui">
-<form id="try_query">
-<h2>Simulate query</h2>
-<label for="srcip">Source IP</label>
-<input type="text" id="srcip">
-<input type="submit" value="Query"><br>
-<h3>result:</h3>
-<div class="result">
+<!-- Title -->
+<div class="title-block">
+    <div class="title-eyebrow">NCDN</div>
+    <div class="title-main">GSLB Visualizer</div>
+    <div class="title-sub">Test your routing logic against the measured latency landscape.</div>
 </div>
-</form>
+
+<!-- Legend -->
+<div class="legend">
+    <div class="legend-heading">Legend</div>
+    <div class="legend-row">
+        <div class="legend-pop-swatch"></div>
+        <div><b>PoP</b> <span style="color:#64748b">— server location</span></div>
+    </div>
+    <div class="legend-row">
+        <div class="legend-probe-swatch"></div>
+        <div><b>Probe</b> <span style="color:#64748b">— client vantage point</span></div>
+    </div>
+    <div class="legend-heading">Latency</div>
+    <div class="legend-lat-row">
+        <div class="legend-lat-item lat-good">&lt;40 ms</div>
+        <div class="legend-lat-item lat-warn">40–90 ms</div>
+        <div class="legend-lat-item lat-bad">90+ ms</div>
+    </div>
+    <div class="legend-tip">Hover a node to reveal latencies. Click a Probe to load a sample IP.</div>
+</div>
+
+<!-- Query panel -->
+<div class="ui">
+    <form id="try_query">
+        <div class="ui-header">
+            <div class="ui-title">Resolve a client IP</div>
+        </div>
+        <div class="ui-input-row">
+            <label for="srcip" class="sr-only">Source IP</label>
+            <input type="text" id="srcip" placeholder="e.g. 198.51.100.21" spellcheck="false" autocomplete="off">
+            <button type="submit" class="ui-submit">
+                <span class="btn-spinner" aria-hidden="true"></span>
+                <span class="btn-label">Resolve</span>
+            </button>
+        </div>
+        <div class="ui-idle-tip" id="result-idle">Submit an IP to run your selection logic and see which PoP it routes to.</div>
+        <div class="result" id="result-area" hidden></div>
+    </form>
 </div>
 
 <div id="pops"></div>
 <div id="regions"></div>
 
 <footer>
-world.svg from <a href="https://simplemaps.com/resources/svg-world">simplemaps.com</a> <a href="https://simplemaps.com/resources/svg-license">license</a>
+    <div class="footer-brand">NCDN · GSLB Visualizer</div>
+    <div>world.svg from <a href="https://simplemaps.com/resources/svg-world">simplemaps.com</a> · <a href="https://simplemaps.com/resources/svg-license">license</a></div>
 </footer>
+
 <script>
 const $ = document.querySelector.bind(document);
 const $$ = document.querySelectorAll.bind(document);
 
 function genToken() {
-    // use current time as token
     return Date.now();
+}
+
+function latClass(ms) {
+    return ms < 40 ? 'lat-good' : ms < 90 ? 'lat-warn' : 'lat-bad';
 }
 
 const popIdToPopup = new Map();
 const regionIdToPopup = new Map();
 let proceedToken = 'notoken';
+
 window.addEventListener('DOMContentLoaded', async () => {
     fetch('/pops.json').then((res) => res.json()).then((pops) => {
         const popsC = $('#pops');
@@ -157,9 +475,14 @@ window.addEventListener('DOMContentLoaded', async () => {
             popsC.appendChild(div);
             popIdToPopup.set(p.id, div);
 
-            div.addEventListener('mouseenter',
-               () => { visualizeLatencyToPop(p.id); });
-            div.addEventListener('mouseleave', clearAllExtra);
+            div.addEventListener('mouseenter', () => {
+                div.classList.add('active');
+                visualizeLatencyToPop(p.id);
+            });
+            div.addEventListener('mouseleave', () => {
+                div.classList.remove('active');
+                clearAllExtra();
+            });
         });
     });
 
@@ -188,21 +511,39 @@ window.addEventListener('DOMContentLoaded', async () => {
                 $('#srcip').value = r.prefices[0].replace('.0/24', '.123');
             });
 
-            div.addEventListener('mouseenter',
-               () => { visualizeLatencyToRegion(r.id); });
-            div.addEventListener('mouseleave', clearAllExtra);
+            div.addEventListener('mouseenter', () => {
+                div.classList.add('active');
+                visualizeLatencyToRegion(r.id);
+            });
+            div.addEventListener('mouseleave', () => {
+                div.classList.remove('active');
+                clearAllExtra();
+            });
         });
     });
 });
 
+const submitBtn = $('#try_query .ui-submit');
+
+function setLoading(on) {
+    $('#srcip').disabled = on;
+    submitBtn.disabled = on;
+    submitBtn.classList.toggle('is-loading', on);
+    submitBtn.querySelector('.btn-label').textContent = on ? 'Running' : 'Resolve';
+}
+
 $('#try_query').addEventListener('submit', async (e) => {
     e.preventDefault();
     const srcip = $('#srcip').value;
-    const resultEl = $('#try_query .result');
-    resultEl.innerHTML = 'Loading…';
+    const resultEl = $('#result-area');
+    const idleTip = $('#result-idle');
+
+    setLoading(true);
+    resultEl.hidden = true;
+    idleTip.hidden = true;
 
     try {
-        resultEl.classList.remove('error');
+        resultEl.className = 'result';
         const resp = await fetch(`/query?srcip=${encodeURIComponent(srcip)}`);
         if (!resp.ok) {
             throw new Error(await resp.text());
@@ -234,9 +575,12 @@ $('#try_query').addEventListener('submit', async (e) => {
         });
         resultEl.innerHTML = '';
         resultEl.appendChild(ul);
-    } catch(e) {
+    } catch(err) {
         resultEl.classList.add('error');
-        resultEl.innerText = e.message;
+        resultEl.textContent = err.message;
+    } finally {
+        setLoading(false);
+        resultEl.hidden = false;
     }
 });
 
@@ -252,13 +596,14 @@ async function visualizeLatencyToPop(popId) {
     const latency_map = await resp.json();
 
     if (proceedToken !== token) {
-        console.log(`visualizeLatencyToPop(${popId}): Not proceeding, since proceedToken has changed.`)
+        console.log(`visualizeLatencyToPop(${popId}): Not proceeding, since proceedToken has changed.`);
         return;
     }
 
     for (const [regionId, latency] of Object.entries(latency_map)) {
-        const region = regionIdToPopup.get(regionId);
-        region.querySelector('.extra').innerText = `${latency.toFixed(2)}ms`;
+        const extra = regionIdToPopup.get(regionId).querySelector('.extra');
+        extra.innerText = `${latency.toFixed(2)}ms`;
+        extra.className = `extra ${latClass(latency)}`;
     }
 }
 
@@ -274,24 +619,30 @@ async function visualizeLatencyToRegion(regionId) {
     const latency_map = await resp.json();
 
     if (proceedToken !== token) {
-        console.log(`visualizeLatencyToRegion(${regionId}): Not proceeding, since proceedToken has changed.`)
+        console.log(`visualizeLatencyToRegion(${regionId}): Not proceeding, since proceedToken has changed.`);
         return;
     }
 
     for (const [popId, latency] of Object.entries(latency_map)) {
-        const pop = popIdToPopup.get(popId);
-        pop.querySelector('.extra').innerText = `${latency.toFixed(2)}ms`;
+        const extra = popIdToPopup.get(popId).querySelector('.extra');
+        extra.innerText = `${latency.toFixed(2)}ms`;
+        extra.className = `extra ${latClass(latency)}`;
     }
 }
 
 function clearAllExtra() {
     proceedToken = 'invalidated';
     for (const pop of popIdToPopup.values()) {
-        pop.querySelector('.extra').innerText = '';
+        const extra = pop.querySelector('.extra');
+        extra.innerText = '';
+        extra.className = 'extra';
     }
     for (const region of regionIdToPopup.values()) {
-        region.querySelector('.extra').innerText = '';
+        const extra = region.querySelector('.extra');
+        extra.innerText = '';
+        extra.className = 'extra';
     }
 }
-
 </script>
+</body>
+</html>
