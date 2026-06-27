@@ -126,14 +126,14 @@ func setup(c *caddy.Controller) error {
 			REGION_LOOP:
 				for c.Next() {
 					switch c.Val() {
-					case "prefices":
+					case "prefixes", "prefices": // "prefices" is a backward-compatible alias
 						for c.NextArg() {
 							s := c.Val()
 							prefix, err := netip.ParsePrefix(s)
 							if err != nil {
-								return c.Errf("Failed to parse prefices=%q: %v", s, err)
+								return c.Errf("Failed to parse prefix=%q: %v", s, err)
 							}
-							r.Prefices = append(r.Prefices, prefix)
+							r.Prefixes = append(r.Prefixes, prefix)
 						}
 
 					case "prober_url":

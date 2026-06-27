@@ -52,7 +52,7 @@ func TestGslbCore(t *testing.T) {
 		Regions: []types.RegionInfo{
 			{
 				Id: "us-west",
-				Prefices: []netip.Prefix{
+				Prefixes: []netip.Prefix{
 					netip.MustParsePrefix("198.51.100.0/28"),
 					netip.MustParsePrefix("198.51.100.192/28"),
 				},
@@ -60,7 +60,7 @@ func TestGslbCore(t *testing.T) {
 			},
 			{
 				Id: "us-east",
-				Prefices: []netip.Prefix{
+				Prefixes: []netip.Prefix{
 					netip.MustParsePrefix("198.51.100.64/28"),
 					netip.MustParsePrefix("198.51.100.128/28"),
 				},
@@ -68,7 +68,7 @@ func TestGslbCore(t *testing.T) {
 			},
 			{
 				Id: "tokyo",
-				Prefices: []netip.Prefix{
+				Prefixes: []netip.Prefix{
 					netip.MustParsePrefix("198.51.100.32/28"),
 				},
 				ProberURL: "https://203.0.113.30:8443/probe",

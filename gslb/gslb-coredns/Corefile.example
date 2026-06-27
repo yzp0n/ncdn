@@ -20,18 +20,18 @@ ncdn.example.:10053 {
         }
 
         region "APAC" {
-            prefices 198.51.100.0/28
-            prefices 198.51.100.192/28
+            prefixes 198.51.100.0/28
+            prefixes 198.51.100.192/28
 
             prober_url https://apac.prober.example:8443/probe
         }
         region "EU" {
-            prefices 198.51.100.64/28
+            prefixes 198.51.100.64/28
 
             prober_url https://eu.prober.example:8443/probe
         }
         region "AFR" {
-            prefices 198.51.100.128/28
+            prefixes 198.51.100.128/28
 
             prober_url https://afr.prober.example:8443/probe
         }

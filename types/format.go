@@ -24,18 +24,18 @@ func (p *PoPInfo) FormatWebUIJson() []byte {
 }
 
 func (r *RegionInfo) FormatWebUIJson() []byte {
-	prefices := make([]string, len(r.Prefices))
-	for i, p := range r.Prefices {
-		prefices[i] = p.String()
+	prefixes := make([]string, len(r.Prefixes))
+	for i, p := range r.Prefixes {
+		prefixes[i] = p.String()
 	}
 
 	in := struct {
 		Id         string   `json:"id"`
-		Prefices   []string `json:"prefices"`
+		Prefixes   []string `json:"prefixes"`
 		UIPopupCSS string   `json:"ui_popup_css"`
 	}{
 		Id:         r.Id,
-		Prefices:   prefices,
+		Prefixes:   prefixes,
 		UIPopupCSS: r.UIPopupCSS,
 	}
 	bs, err := json.Marshal(&in)

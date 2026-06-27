@@ -20,8 +20,8 @@ type RegionInfo struct {
 	// The region identifier for convenience
 	Id string
 
-	// IPv4 Prefices constituting the user region
-	Prefices []netip.Prefix
+	// IPv4 Prefixes constituting the user region
+	Prefixes []netip.Prefix
 
 	// The prober that we will use to represent the region
 	ProberURL string
