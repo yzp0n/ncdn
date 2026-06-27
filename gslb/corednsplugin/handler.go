@@ -79,29 +79,32 @@ func (p *Gslb) ServeDNS(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (
 		}
 	}
 
-	var records []dns.RR
-	var err error
-	switch state.QType() {
-	// add logic here to act differently based on the query type
-	default:
-		records, err = p.A(ctx, state.QName(), subdomain, srcIP)
-	}
+	records, err := p.A(ctx, state.QName(), subdomain, srcIP)
 	if err != nil {
 		log.Errorf("err: %v", err)
 		return dns.RcodeServerFailure, err
 	}
 
 	if len(records) == 0 {
-		// Generate NXDOMAIN response.
-
 		m := new(dns.Msg)
 		m.SetRcode(r, dns.RcodeNameError)
 		m.Ns = []dns.RR{p.soaRecord()}
-
 		if err := w.WriteMsg(m); err != nil {
 			log.Debugf("WriteMsg err=%v", err)
 		}
 		return dns.RcodeNameError, nil
+	}
+
+	if state.QType() != dns.TypeA {
+		// Name exists but we have no records of this type: NODATA.
+		m := new(dns.Msg)
+		m.SetReply(r)
+		m.Authoritative = true
+		m.Ns = []dns.RR{p.soaRecord()}
+		if err := w.WriteMsg(m); err != nil {
+			log.Debugf("WriteMsg err=%v", err)
+		}
+		return dns.RcodeSuccess, nil
 	}
 
 	m := new(dns.Msg)
