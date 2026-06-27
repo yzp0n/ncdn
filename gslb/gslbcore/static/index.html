@@ -105,14 +105,14 @@ footer {
 
 <h1>NCDN GSLB visualizer</h1>
 
-<form id="try_query">
 <div class="ui">
+<form id="try_query">
 <h2>Simulate query</h2>
+<label for="srcip">Source IP</label>
 <input type="text" id="srcip">
-<input type="submit"><br>
+<input type="submit" value="Query"><br>
 <h3>result:</h3>
 <div class="result">
-[[Results shown here]]
 </div>
 </form>
 </div>
@@ -134,7 +134,7 @@ function genToken() {
 
 const popIdToPopup = new Map();
 const regionIdToPopup = new Map();
-window.proceedToken = 'notoken';
+let proceedToken = 'notoken';
 window.addEventListener('DOMContentLoaded', async () => {
     fetch('/pops.json').then((res) => res.json()).then((pops) => {
         const popsC = $('#pops');
@@ -147,7 +147,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             div.setAttribute('x-id', p.id);
 
             const h2 = document.createElement('h2');
-            h2.innerText = "📡"+p.id;
+            h2.innerText = "PoP: "+p.id;
             div.appendChild(h2);
 
             const extra = document.createElement('div');
@@ -174,7 +174,7 @@ window.addEventListener('DOMContentLoaded', async () => {
             div.setAttribute('x-id', r.id);
 
             const h2 = document.createElement('h2');
-            h2.innerText = "📍"+r.id;
+            h2.innerText = "Probe: "+r.id;
             div.appendChild(h2);
 
             const extra = document.createElement('div');
@@ -199,11 +199,11 @@ $('#try_query').addEventListener('submit', async (e) => {
     e.preventDefault();
     const srcip = $('#srcip').value;
     const resultEl = $('#try_query .result');
-    resultEl.innerHTML = '';
+    resultEl.innerHTML = 'Loading…';
 
     try {
         resultEl.classList.remove('error');
-        const resp = await fetch(`/query?srcip=${srcip}`);
+        const resp = await fetch(`/query?srcip=${encodeURIComponent(srcip)}`);
         if (!resp.ok) {
             throw new Error(await resp.text());
         }
@@ -232,6 +232,7 @@ $('#try_query').addEventListener('submit', async (e) => {
 
             ul.appendChild(li);
         });
+        resultEl.innerHTML = '';
         resultEl.appendChild(ul);
     } catch(e) {
         resultEl.classList.add('error');
@@ -241,15 +242,16 @@ $('#try_query').addEventListener('submit', async (e) => {
 
 async function visualizeLatencyToPop(popId) {
     const token = genToken();
-    window.proceedToken = token;
+    proceedToken = token;
 
-    const resp = await fetch(`/latency_to_pop?pop_id=${popId}`);
+    const resp = await fetch(`/latency_to_pop?pop_id=${encodeURIComponent(popId)}`);
     if (!resp.ok) {
-        throw new Error(await resp.text());
+        console.error(`visualizeLatencyToPop(${popId}): ${await resp.text()}`);
+        return;
     }
     const latency_map = await resp.json();
 
-    if (window.proceedToken !== token) {
+    if (proceedToken !== token) {
         console.log(`visualizeLatencyToPop(${popId}): Not proceeding, since proceedToken has changed.`)
         return;
     }
@@ -262,15 +264,16 @@ async function visualizeLatencyToPop(popId) {
 
 async function visualizeLatencyToRegion(regionId) {
     const token = genToken();
-    window.proceedToken = token;
+    proceedToken = token;
 
-    const resp = await fetch(`/latency_to_region?region_id=${regionId}`);
+    const resp = await fetch(`/latency_to_region?region_id=${encodeURIComponent(regionId)}`);
     if (!resp.ok) {
-        throw new Error(await resp.text());
+        console.error(`visualizeLatencyToRegion(${regionId}): ${await resp.text()}`);
+        return;
     }
     const latency_map = await resp.json();
 
-    if (window.proceedToken !== token) {
+    if (proceedToken !== token) {
         console.log(`visualizeLatencyToRegion(${regionId}): Not proceeding, since proceedToken has changed.`)
         return;
     }
@@ -282,8 +285,7 @@ async function visualizeLatencyToRegion(regionId) {
 }
 
 function clearAllExtra() {
-    window.proceedToken = 'invalidated';
-    // return;
+    proceedToken = 'invalidated';
     for (const pop of popIdToPopup.values()) {
         pop.querySelector('.extra').innerText = '';
     }
