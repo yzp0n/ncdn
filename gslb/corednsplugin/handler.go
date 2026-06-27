@@ -123,7 +123,7 @@ func (p *Gslb) serveNs(ctx context.Context, w dns.ResponseWriter, r *dns.Msg) (i
 	m.SetReply(r)
 	m.Authoritative = true
 	m.Answer = append(m.Answer, &dns.A{
-		Hdr: dns.RR_Header{Name: p.zone, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: Ttl},
+		Hdr: dns.RR_Header{Name: p.nsDomain, Rrtype: dns.TypeA, Class: dns.ClassINET, Ttl: Ttl},
 		A:   p.nsA,
 	})
 
